@@ -13,12 +13,23 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
-  const [isFiltered, setIsFiltered] = useState(false)  // Add this state
+  const [isFiltered, setIsFiltered] = useState(false)
+  const [transactionsState, setTransactionsState] = useState<{ [id: string]: boolean }>({})
 
-  const transactions = useMemo(
-    () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
-    [paginatedTransactions, transactionsByEmployee]
-  )
+  const handleTransactionApprovalChange = useCallback((transactionId: string, newValue: boolean) => {
+    setTransactionsState(prevState => ({
+      ...prevState,
+      [transactionId]: newValue,
+    }))
+  }, [])
+
+  const transactions = useMemo(() => {
+    const mergedTransactions = (paginatedTransactions?.data ?? transactionsByEmployee ?? []).map(transaction => ({
+      ...transaction,
+      approved: transactionsState[transaction.id] !== undefined ? transactionsState[transaction.id] : transaction.approved,
+    }))
+    return mergedTransactions
+  }, [paginatedTransactions, transactionsByEmployee, transactionsState])
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
@@ -33,7 +44,7 @@ export function App() {
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
-      setIsFiltered(true)  // Set filter state
+      setIsFiltered(true)
       paginatedTransactionsUtils.invalidateData()
       await transactionsByEmployeeUtils.fetchById(employeeId)
     },
@@ -48,9 +59,8 @@ export function App() {
 
   const handleSelectChange = useCallback(
     async (newValue: Employee | null) => {
-      // Handle "All Employees" case, improtant!!
       if (newValue === null || newValue.id === EMPTY_EMPLOYEE.id) {
-        setIsFiltered(false)  // Reset filtered state
+        setIsFiltered(false)
         await loadAllTransactions()
       } else {
         if (newValue.id) {
@@ -60,6 +70,7 @@ export function App() {
     },
     [loadAllTransactions, loadTransactionsByEmployee]
   )
+
   return (
     <Fragment>
       <main className="MainContainer">
@@ -83,9 +94,9 @@ export function App() {
         <div className="RampBreak--l" />
 
         <div className="RampGrid">
-          <Transactions transactions={transactions} />
+          <Transactions transactions={transactions} onTransactionApprovalChange={handleTransactionApprovalChange} />
 
-          {transactions !== null && !isFiltered &&  (
+          {transactions !== null && !isFiltered && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
