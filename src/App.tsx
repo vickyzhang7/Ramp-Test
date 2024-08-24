@@ -43,6 +43,19 @@ export function App() {
     }
   }, [employeeUtils.loading, employees, loadAllTransactions])
 
+  const handleSelectChange = useCallback(
+    async (newValue: Employee | null) => {
+      // Handle "All Employees" case, improtant!!
+      if (newValue === null || newValue.id === EMPTY_EMPLOYEE.id) {
+        await loadAllTransactions()
+      } else {
+        if (newValue.id) {
+          await loadTransactionsByEmployee(newValue.id)
+        }
+      }
+    },
+    [loadAllTransactions, loadTransactionsByEmployee]
+  )
   return (
     <Fragment>
       <main className="MainContainer">
@@ -60,13 +73,7 @@ export function App() {
             value: item.id,
             label: `${item.firstName} ${item.lastName}`,
           })}
-          onChange={async (newValue) => {
-            if (newValue === null) {
-              return
-            }
-
-            await loadTransactionsByEmployee(newValue.id)
-          }}
+          onChange={handleSelectChange}
         />
 
         <div className="RampBreak--l" />

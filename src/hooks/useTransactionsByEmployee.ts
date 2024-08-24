@@ -8,7 +8,13 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
   const [transactionsByEmployee, setTransactionsByEmployee] = useState<Transaction[] | null>(null)
 
   const fetchById = useCallback(
-    async (employeeId: string) => {
+    async (employeeId: string | null) => {
+      if (!employeeId) {
+        // Handle All Employees case
+        setTransactionsByEmployee(null)
+        return
+      }
+
       const data = await fetchWithCache<Transaction[], RequestByEmployeeParams>(
         "transactionsByEmployee",
         {
