@@ -13,6 +13,7 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
+  const [isFiltered, setIsFiltered] = useState(false)  // Add this state
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
@@ -32,6 +33,7 @@ export function App() {
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
+      setIsFiltered(true)  // Set filter state
       paginatedTransactionsUtils.invalidateData()
       await transactionsByEmployeeUtils.fetchById(employeeId)
     },
@@ -48,6 +50,7 @@ export function App() {
     async (newValue: Employee | null) => {
       // Handle "All Employees" case, improtant!!
       if (newValue === null || newValue.id === EMPTY_EMPLOYEE.id) {
+        setIsFiltered(false)  // Reset filtered state
         await loadAllTransactions()
       } else {
         if (newValue.id) {
@@ -82,7 +85,7 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {transactions !== null && !isFiltered &&  (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
